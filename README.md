@@ -1,5 +1,8 @@
 # ChainWatch — AI-Powered Blockchain Monitoring Platform
 
+
+THE PPTX link:https://www.canva.com/design/DAHB693E9jI/MVEiSukOJX6tMBBIGvC0SA/edit?utm_content=DAHB693E9jI&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton
+
 > Real-time Ethereum blockchain monitoring with ML-based anomaly detection, graph analysis, flash-loan detection, and wash-trading identification.
 
 ![ChainWatch](https://img.shields.io/badge/ChainWatch-AI%20Monitor-6366f1?style=for-the-badge)
