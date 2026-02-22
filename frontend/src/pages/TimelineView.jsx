@@ -5,7 +5,7 @@ import {
     XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
     ComposedChart
 } from 'recharts';
-import { Clock, TrendingUp, AlertTriangle, Zap, RefreshCw } from 'lucide-react';
+import { Clock, TrendingUp, AlertTriangle, Zap, Activity, RefreshCw } from 'lucide-react';
 import { api } from '../api';
 
 function CustomTooltip({ active, payload, label }) {

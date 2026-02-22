@@ -1,8 +1,8 @@
 {
     "rewrites": [
         {
-            "source": "/api/(.*)",
-            "destination": "https://your-backend.onrender.com/api/$1"
+            "source": "/api/:path*",
+            "destination": "https://chainwatch-api.onrender.com/api/:path*"
         },
         {
             "source": "/(.*)",

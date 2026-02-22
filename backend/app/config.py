@@ -21,7 +21,7 @@ ETH_RPC_URL = os.getenv("ETH_RPC_URL", "https://ethereum-rpc.publicnode.com")
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR / 'chainwatch.db'}")
 
 # Polling interval (seconds) – Ethereum avg block time is ~12s
-POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "10"))
+POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "12"))
 
 # ML settings
 ANOMALY_CONTAMINATION = float(os.getenv("ANOMALY_CONTAMINATION", "0.05"))
@@ -36,7 +36,10 @@ RISK_WEIGHTS = {
 }
 
 # CORS
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+CORS_ORIGINS = os.getenv(
+    "CORS_ORIGINS",
+    "http://localhost:5173,http://localhost:3000,http://localhost:8000"
+).split(",")
 
-# Server port (for Render deployment)
+# Server port (for local deployment)
 PORT = int(os.getenv("PORT", "8000"))

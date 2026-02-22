@@ -7,12 +7,14 @@ services:
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     rootDir: backend
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.0"
       - key: ETH_RPC_URL
-        value: https://ethereum-rpc.publicnode.com
+        value: "https://ethereum-rpc.publicnode.com"
       - key: DATABASE_URL
-        value: sqlite:///data/chainwatch.db
+        value: "sqlite:///data/chainwatch.db"
       - key: POLL_INTERVAL
-        value: "10"
+        value: "12"
       - key: CORS_ORIGINS
         value: "*"
     healthCheckPath: /api/health

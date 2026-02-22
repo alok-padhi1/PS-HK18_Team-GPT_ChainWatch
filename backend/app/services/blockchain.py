@@ -28,6 +28,8 @@ FALLBACK_RPCS = [
     "https://1rpc.io/eth",
 ]
 
+MAX_CONSECUTIVE_ERRORS = 10  # Number of consecutive poll errors before simulation fallback
+
 
 class BlockchainService:
     """Manages Ethereum blockchain connection and data ingestion."""
@@ -41,6 +43,11 @@ class BlockchainService:
         self._polling = False
         self._simulation_mode = False
         self._connect()
+        # Log connection status on startup
+        if self.is_connected:
+            logger.info(f"✅ Live mode active — connected to {self._rpc_url}")
+        else:
+            logger.warning(f"⚠️ Could not connect to any RPC. Mode: {self.mode}")
 
     # ── Connection management ─────────────────────────────────────────────────
 
@@ -287,10 +294,14 @@ class BlockchainService:
             except Exception as e:
                 consecutive_errors += 1
                 logger.error(f"Polling error (#{consecutive_errors}): {e}")
-                if consecutive_errors >= 5 and not self._simulation_mode:
-                    logger.warning("Too many consecutive errors. Switching to simulation mode.")
+                if consecutive_errors >= MAX_CONSECUTIVE_ERRORS and not self._simulation_mode:
+                    logger.warning(f"Too many consecutive errors ({consecutive_errors}). Switching to simulation mode.")
                     self._simulation_mode = True
                     consecutive_errors = 0
+                elif consecutive_errors > 0 and consecutive_errors % 3 == 0 and not self._simulation_mode:
+                    # Attempt reconnection every 3 errors
+                    logger.info("Attempting RPC reconnection after errors...")
+                    self.reconnect()
 
             await asyncio.sleep(POLL_INTERVAL)
 

@@ -35,36 +35,82 @@ logger = logging.getLogger("chainwatch")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize DB, start background polling with auto-analysis."""
+    """Initialize DB, bulk-ingest blocks, start background polling with auto-analysis."""
     init_db()
     logger.info("ChainWatch starting up...")
 
+    # ── Initial bulk ingest: fetch 20 blocks for massive starting dataset ──
+    async def initial_ingest():
+        """Ingest 20 recent blocks on startup for a rich initial dataset."""
+        try:
+            logger.info("▶ Starting bulk ingest of 20 blocks for initial data...")
+            result = await asyncio.to_thread(
+                blockchain_service.ingest_latest_blocks, 20
+            )
+            logger.info(
+                f"✅ Bulk ingest complete: {result['transactions_fetched']} txs from "
+                f"{result['blocks_processed']} blocks ({result['new_transactions_stored']} stored)"
+            )
+
+            # Run full detection pipeline on initial data
+            def run_initial_pipeline():
+                from app.database import SessionLocal
+                db = SessionLocal()
+                try:
+                    train_result = ml_engine.train(db)
+                    logger.info(f"ML training: {train_result.get('status', 'unknown')}")
+
+                    predictions = ml_engine.predict(db)
+                    if predictions:
+                        ml_engine.update_wallet_profiles(db, predictions)
+                        logger.info(f"Profiled {len(predictions)} wallets")
+
+                    graph_result = graph_analyzer.build_graph(db)
+                    logger.info(
+                        f"Graph: {graph_result.get('nodes', 0)} nodes, "
+                        f"{graph_result.get('edges', 0)} edges, "
+                        f"{graph_result.get('communities', 0)} communities"
+                    )
+
+                    result = risk_engine.run_full_detection(db)
+                    logger.info(
+                        f"Initial detection: {result.get('alerts_generated', 0)} alerts, "
+                        f"{result.get('wallets_profiled', 0)} wallets profiled"
+                    )
+                    blockchain_service.last_analysis_at = datetime.utcnow()
+                except Exception as e:
+                    logger.error(f"Initial pipeline error: {e}", exc_info=True)
+                finally:
+                    db.close()
+
+            await asyncio.to_thread(run_initial_pipeline)
+            logger.info("✅ Initial analysis pipeline complete. Dashboard ready.")
+
+        except Exception as e:
+            logger.error(f"Bulk ingest error: {e}", exc_info=True)
+
+    await initial_ingest()
+
+    # ── Background polling for new blocks ──
     async def on_new_block(block_number: int):
         """Callback after each polled block batch – run full detection pipeline."""
-        logger.info(f"Block {block_number} ingested. Running full detection pipeline...")
+        logger.info(f"Block {block_number} ingested. Running detection pipeline...")
 
         def run_full_pipeline():
             from app.database import SessionLocal
             db = SessionLocal()
             try:
-                # 1. Train ML models
                 train_result = ml_engine.train(db)
-                logger.info(f"ML training: {train_result.get('status', 'unknown')}")
-
-                # 2. Run ML predictions
                 predictions = ml_engine.predict(db)
                 if predictions:
                     ml_engine.update_wallet_profiles(db, predictions)
-                    logger.info(f"Updated {len(predictions)} wallet profiles")
 
-                # 3. Build graph and run graph analysis
                 graph_analyzer.build_graph(db)
 
-                # 4. Run full risk scoring and alert generation
                 result = risk_engine.run_full_detection(db)
                 logger.info(
-                    f"Detection complete: {result.get('alerts_generated', 0)} alerts, "
-                    f"{result.get('wallets_profiled', 0)} wallets profiled"
+                    f"Detection: {result.get('alerts_generated', 0)} alerts, "
+                    f"{result.get('wallets_profiled', 0)} wallets"
                 )
 
                 blockchain_service.last_analysis_at = datetime.utcnow()
